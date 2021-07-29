@@ -5,6 +5,8 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
+const User = require('./models/User.js');
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 
@@ -15,9 +17,38 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+const mongooseOptions = { useNewUrlParser: true, useUnifiedTopology: true }
+mongoose.connect('mongodb://localhost:27017/user-db', mongooseOptions)
+
+let jessica = new User({ name: 'jessica', email: "devjessparker@gma.com", books: [{ name: "Hunger Games", description: "Brutal Teenage Warfare", status: "Have Read" }, { name: "Divergent", description: "Brutal Teenage Warfare Pt.2", status: "Have Read"}, { name: "Divergent", description: "Brutal Teenage Warfare Pt.3", status: "Have Not Read" }]
+})
+jessica.save();
+
+app.get('/auth-test', (req, res) => {
+  res.json({ samepleUser: ( { name: 'ricky'}, { person: 'bobby'} ) })
+});
+
+app.post('/books', (req, res) => {
+  let newUser = new User(req.body);
+  newUser.save()
+    .then(result => {
+      res.json(result);
+    })
+})
+
+app.get('/books', getAllBooks);
+
+function getAllBooks(req, res) {
+  User.find({})
+    .then(books => {
+      res.json(books);
+    })
+}
+
+
 const client = jwksClient({
   jwksUri: 'https://dev-43fqro-e.us.auth0.com/.well-known/jwks.json'
-  // extension on this Uri???
+  
 });
 
 function getKey(header) {
@@ -46,9 +77,3 @@ app.listen(PORT, () => {
 console.log(`listening on ${PORT}`);
 });
 
-
- // TODO: 
-  // STEP 1: get the jwt from the headers
-  // STEP 2. use the jsonwebtoken library to verify that it is a valid jwt
-  // jsonwebtoken dock - https://www.npmjs.com/package/jsonwebtoken
-  // STEP 3: to prove that everything is working correctly, send the opened jwt back to the front-end
